@@ -27,21 +27,29 @@ class PoseDetector:
                                      self.enable_segmentation, self.smooth_segmentation, self.min_detection_confidence,
                                      self.min_tracking_confidence)
 
-    def findPose(self, img, draw=True):
+    def getPose(self, img, draw=True):
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        results = self.pose.process(imgRGB)
+        self.results = self.pose.process(imgRGB)
 
-        if results.pose_landmarks:
+        if self.results.pose_landmarks:
             if draw:
-                self.mpDraw.draw_landmarks(img, results.pose_landmarks, self.mpPose.POSE_CONNECTIONS)
+                self.mpDraw.draw_landmarks(img, self.results.pose_landmarks, self.mpPose.POSE_CONNECTIONS)
 
         return img
 
-        # for i, lm in enumerate(results.pose_landmarks.landmark):
-        #     h, w, c = img.shape
-        #     print(i, lm)
-        #     cx, cy = int(lm.x * w), int(lm.y * h)
-        #     cv2.circle(img, (cx, cy), 3, (255, 0, 0), cv2.FILLED)
+    def getPosition(self, img, draw=True):
+        lmList = []
+
+        if self.results.pose_landmarks:
+            for i, lm in enumerate(self.results.pose_landmarks.landmark):
+                h, w, c = img.shape
+                # print(i, lm)
+                cx, cy = int(lm.x * w), int(lm.y * h)
+                lmList.append([i, cx, cy])
+                if draw:
+                    cv2.circle(img, (cx, cy), 3, (255, 0, 0), cv2.FILLED)
+
+        return lmList
 
 
 def main():
@@ -53,7 +61,14 @@ def main():
     while True:
         success, img = cap.read()
         img = cv2.resize(img, (1080, 720), interpolation=cv2.INTER_LINEAR)
-        img = detector.findPose(img)
+        img = detector.getPose(img)
+
+        lmList = detector.getPosition(img, draw=False)
+
+        # if len(lmList) != 0:
+        #     print(lmList)
+        #     cv2.circle(img, (lmList[14][1], lmList[14][2]), 3, (255, 0, 0), cv2.FILLED)
+        #     cv2.circle(img, (lmList[13][1], lmList[13][2]), 3, (255, 0, 0), cv2.FILLED)
 
         cTime = time.time()
         fps = 1 / (cTime - pTime)
